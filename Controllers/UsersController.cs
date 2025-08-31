@@ -26,6 +26,19 @@ namespace NET24FilmBorrowSystem.Controllers
             return Ok(users);
         }
 
+        [HttpGet("{id:int}")]
+        public async Task<ActionResult<UserDTO>> GetUserById(int id)
+        {
+            var user = await _userService.GetUserByIdAsync(id);
+
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(user);
+        }
+
         [HttpPost]
         public async Task<ActionResult<UserDTO>> CreateUser(UserDTO user)
         {
@@ -35,17 +48,47 @@ namespace NET24FilmBorrowSystem.Controllers
             return CreatedAtAction(nameof(GetAllUsers), new { id = userId });
         }
 
-
-        [HttpGet("TestMV")]
-        public IActionResult GetData()
+        [HttpPut("{id:int}")]
+        public async Task<IActionResult> UpdateUser(UserDTO user, int id)
         {
-            var data = _config["MittNamn"];
-            if(data == null)
+            var updated = await _userService.UpdateUserAsync(user);
+
+            if (!updated)
             {
-                return NotFound();
+                return BadRequest();
             }
 
-            return Ok(data);
+            return NoContent();
         }
+
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> DeleteUser(int id)
+        {
+            var removed = await _userService.DeleteUserAsync(id);
+
+            if (!removed)
+            {
+                return BadRequest();
+            }
+
+            return NoContent();
+        }
+
+
+
+
+        // Demo of getting data from different environments.
+
+        //[HttpGet("TestMV")]
+        //public IActionResult GetData()
+        //{
+        //    var data = _config["MittNamn"];
+        //    if(data == null)
+        //    {
+        //        return NotFound();
+        //    }
+
+        //    return Ok(data);
+        //}
     }
 }

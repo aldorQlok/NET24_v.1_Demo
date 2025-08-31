@@ -60,15 +60,41 @@ namespace NET24FilmBorrowSystem.Services
         }
 
 
-        public Task<bool> UpdateUserAsync(UserDTO userDTO)
+        public async Task<bool> UpdateUserAsync(UserDTO userDTO)
         {
-            throw new NotImplementedException();
+            var user = await _userRepo.GetUserByIdAsync(userDTO.Id);
+
+            if(user == null)
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrEmpty(userDTO.Name))
+            {
+                user.Name = userDTO.Name;
+            }
+
+            if (!string.IsNullOrEmpty(userDTO.Email))
+            {
+                user.Email = userDTO.Email;
+            }
+
+            await _userRepo.UpdateUserAsync(user);
+
+            return true;
         }
         
 
-        public Task<bool> DeleteUserAsync(int userId)
+        public async Task<bool> DeleteUserAsync(int userId)
         {
-            throw new NotImplementedException();
+            var removed = await _userRepo.DeleteUserAsync(userId);
+
+            if (!removed)
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 }
