@@ -21,6 +21,8 @@ namespace NET24FilmBorrowSystem
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnect"));
             });
 
+            builder.Services.AddScoped<IMovieRepository, MovieRepository>();
+            builder.Services.AddScoped<IMovieService, MovieService>();
             builder.Services.AddScoped<IUserRepository, UserRepository>();
             builder.Services.AddScoped<IUserService, UserService>();
 

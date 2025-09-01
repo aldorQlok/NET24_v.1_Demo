@@ -1,6 +1,10 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using NET24FilmBorrowSystem.Data;
+using NET24FilmBorrowSystem.DTOs.MovieDTOs;
 using NET24FilmBorrowSystem.DTOs.UserDTOs;
+using NET24FilmBorrowSystem.DTOs.UserMoviesDTOs;
 using NET24FilmBorrowSystem.Models;
 using NET24FilmBorrowSystem.Services.IServices;
 
@@ -12,10 +16,12 @@ namespace NET24FilmBorrowSystem.Controllers
     {
         private readonly IUserService _userService;
         private readonly IConfiguration _config;
-        public UsersController(IUserService userService, IConfiguration config)
+        private readonly AppDBContext _context;
+        public UsersController(IUserService userService, IConfiguration config, AppDBContext context)
         {
             _userService = userService;
             _config = config;
+            _context = context;
         }
 
         [HttpGet]
@@ -74,21 +80,64 @@ namespace NET24FilmBorrowSystem.Controllers
             return NoContent();
         }
 
+        [HttpGet("{id:int}/movies")]
+        public async Task<IActionResult> UserMovies(int id)
+        {
+            var user = await _userService.GetUserByIdAsync(id);
 
+            var userMovies = new UserMoviesDTO
+            {
+                User = user
+            };
 
+            var movies = await _context.UserMovies.Where(um => um.FK_UserId == id && um.ReturnDate == null)
+                .Include(m => m.Movie).Select(m =>
+                new MovieDTO
+                {
+                    Id = m.FK_MovieId,
+                    Title = m.Movie.Title,
+                    ReleaseYear = m.Movie.ReleaseYear,
+                }).ToListAsync();
 
-        // Demo of getting data from different environments.
+            userMovies.Movies = movies;
 
-        //[HttpGet("TestMV")]
-        //public IActionResult GetData()
-        //{
-        //    var data = _config["MittNamn"];
-        //    if(data == null)
-        //    {
-        //        return NotFound();
-        //    }
+            return Ok(userMovies);
+        }
 
-        //    return Ok(data);
-        //}
+        [HttpPost("{userId:int}/movies/{movieId:int}/borrow")]
+        public async Task<IActionResult> BorrowMovie(int userId, int movieId)
+        {
+            // OBS: Should first check if user exists and if movie is truly available before the following code.
+
+            var borrow = new UserMovies
+            {
+                FK_UserId = userId,
+                FK_MovieId = movieId,
+                BorrowDate = DateTime.UtcNow,
+            };
+
+            _context.UserMovies.Add(borrow);
+            await _context.SaveChangesAsync();
+
+            return Created();
+        }
+
+        [HttpPost("{userId:int}/movies/{movieId:int}/return")]
+        public async Task<IActionResult> ReturnMovie(int userId, int movieId)
+        {
+            // OBS: Should first check if user exists and if movie is truly available before the following code.
+
+            var movie = await _context.UserMovies.FirstOrDefaultAsync(um => um.FK_UserId == userId && um.FK_MovieId == movieId);
+            if (movie == null)
+            {
+                return BadRequest();
+            }
+
+            movie.ReturnDate = DateTime.UtcNow;
+            _context.UserMovies.Update(movie);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
     }
 }
