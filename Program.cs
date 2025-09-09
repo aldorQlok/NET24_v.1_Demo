@@ -21,6 +21,16 @@ namespace NET24FilmBorrowSystem
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnect"));
             });
 
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowReactApp", policy =>
+                {
+                    policy.WithOrigins("http://localhost:5173")
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+                });
+            });
+
             builder.Services.AddScoped<IMovieRepository, MovieRepository>();
             builder.Services.AddScoped<IMovieService, MovieService>();
             builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -40,7 +50,7 @@ namespace NET24FilmBorrowSystem
                 app.UseSwaggerUI();
             }
 
-            app.UseHttpsRedirection();
+            app.UseCors("AllowReactApp");
 
             app.UseAuthorization();
 
